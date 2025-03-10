@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+      crossorigin="anonymous"
+    />
+    <title>Hello, world!</title>
+  </head>
+  <body>
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <div class="container">
+      <div id="app" class="mt-5">
+        <div class="row">
+          <div class="col-lg-4">
+            {{ message }}
+            <div v-if="state !== 'active'">
+              Простите, сессия уже завершена, зайдите в бот заново.
+            </div>
+            <div v-else>
+              <h2>Привет, {{ name }}!</h2>
+              <div class="mb-4">
+                <template v-if="items && items.length">
+                  <div>Вот список твоих задач:</div>
+                  <ul class="list-group">
+                    <template v-for="(item, idx) in items" :key="item.task">
+                      <li class="list-group-item">
+                        <label>
+                          <input
+                            class="form-check-input me-1"
+                            type="checkbox"
+                            value=""
+                            :checked="item.status"
+                            aria-label="..."
+                            @change="updateStatus(idx, $event.target.checked)"
+                          />
+                          <span
+                            :class="{ 'text-decoration-line-through': item.status }"
+                            >{{ item.task }}</span
+                          >
+                        </label>
+                      </li>
+                    </template>
+                  </ul>
+                </template>
+                <div v-else>
+                  <i>У тебя пока нет задач.</i>
+                </div>
+              </div>
+              <form @submit.prevent="add">
+                <div class="input-group mb-3">
+                  <input
+                    v-model="task"
+                    type="text"
+                    class="form-control"
+                    placeholder="Новая задача"
+                    aria-label="Текст новой задачи"
+                    aria-describedby="button-add"
+                    required
+                  />
+                  <button
+                    class="btn btn-outline-primary"
+                    type="submit"
+                    id="button-add"
+                  >
+                    Добавить
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      Vue.createApp({
+        data() {
+          return {
+            sessionId: null,
+            message: null,
+            name: null,
+            items: null,
+            task: null,
+            state: null,
+          };
+        },
+
+        mounted() {
+          let q = new URLSearchParams(location.search);
+
+          this.sessionId = q.get("sid");
+
+          if (!this.sessionId) {
+            this.message = "Session id not provided";
+          } else {
+            this.load();
+          }
+        },
+
+        methods: {
+          load() {
+            axios
+              .get(
+                `https://m.bot-marketing.com/api/public/tunnelSessions/${this.sessionId}`
+              )
+              .then((resp) => {
+                this.updateData(resp.data);
+              });
+          },
+
+          updateData(data) {
+            this.name = data.client.name;
+            this.items = data.variables?.items || [];
+            this.state = data.statusName;
+          },
+
+          add() {
+            this.runRequest("add", { task: this.task });
+
+            this.task = null;
+          },
+
+          updateStatus(idx, status) {
+            this.runRequest("status", { idx, status });
+          },
+
+          runRequest(code, params) {
+            axios
+              .post(
+                `https://m.bot-marketing.com/api/public/tunnelSessions/${this.sessionId}/request`,
+                {
+                  code,
+                  params,
+                }
+              )
+              .then((resp) => {
+                this.updateData(resp.data);
+              });
+          },
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
