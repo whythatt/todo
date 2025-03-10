@@ -108,7 +108,7 @@
           load() {
             axios
               .get(
-                `https://m.bot-marketing.com/api/public/tunnelSessions/${this.sessionId}`
+                `https://console.bot-marketing.com/api/public/tunnelSessions/${this.sessionId}`
               )
               .then((resp) => {
                 this.updateData(resp.data);
